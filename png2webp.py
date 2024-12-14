@@ -36,9 +36,11 @@ def convert_png_to_webp(output):
     INPUT_DIR = output
     OUTPUT_DIR = output
     files = glob.glob(INPUT_DIR + '*.' + IMG_INPUT_FILENAME_EXT)
-
+    num_files = len(files)
+    print(f"파일 개수 : {num_files}")
     # 각 PNG 파일을 WEBP로 변환하고 저장
     for file in files:
+
         file_name = os.path.splitext(os.path.basename(file))[0]
         output_file_name = file_name + '.' + IMG_OUTPUT_FILENAME_EXT
         output_file_path = OUTPUT_DIR + output_file_name
