@@ -25,8 +25,7 @@ IMG_OUTPUT_FORMAT = 'WEBP'
 # 이미지 확장자
 IMG_INPUT_FILENAME_EXT = 'png'
 IMG_OUTPUT_FILENAME_EXT = 'webp'
-# 디렉토리
-today = datetime.now().strftime("%Y-%m-%d")
+
 #INPUT_DIR = 'inputs/'
 #OUTPUT_DIR = 'outputs/'
 #INPUT_DIR = f"{today}/"
@@ -135,6 +134,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PNG to WEBP converter')
     parser.add_argument('-o', '--output', required=True, help='출력 디렉토리')
     args = parser.parse_args()
+    # 디렉토리
+    today = datetime.now().strftime("%Y-%m-%d")
     output = args.output
     output = output + "/" today + "/"
 
