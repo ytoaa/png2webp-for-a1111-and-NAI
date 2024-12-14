@@ -9,13 +9,13 @@ import piexif.helper
 import argparse
 from PIL import Image, PngImagePlugin
 from datetime import datetime
-from pywintypes import Time
 
 # Windows 환경인지 확인
 on_windows = os.name == 'nt'
 if on_windows:
     import win32file
     import win32con
+    from pywintypes import Time
 
 # WEBP 압축 품질 (무손실 압축을 위해 100으로 설정)
 WEBP_QUALITY = 100  # 손실 압축을 위해 100으로 변경
