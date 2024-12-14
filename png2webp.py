@@ -1,5 +1,5 @@
 # Copyright © 2023 Takenoko
-# Released under the MIT license
+# MIT 라이선스로 배포
 # https://opensource.org/licenses/mit-license.php
 
 import glob
@@ -10,28 +10,31 @@ from PIL import Image, PngImagePlugin
 from datetime import datetime
 from pywintypes import Time
 
-# Windowsの場合
+# Windows 환경인지 확인
 on_windows = os.name == 'nt'
 if on_windows:
     import win32file
     import win32con
 
-# WEBP品質
-WEBP_QUALITY = 80
-# 画像形式
+# WEBP 압축 품질 (무손실 압축을 위해 100으로 설정)
+WEBP_QUALITY = 100  # 손실 압축을 위해 100으로 변경
+# 이미지 형식
 IMG_INPUT_FORMAT = 'PNG'
 IMG_OUTPUT_FORMAT = 'WEBP'
-# 画像拡張子
+# 이미지 확장자
 IMG_INPUT_FILENAME_EXT = 'png'
 IMG_OUTPUT_FILENAME_EXT = 'webp'
-# ディレクトリ
-INPUT_DIR = 'inputs/'
-OUTPUT_DIR = 'outputs/'
+# 디렉토리
+today = datetime.now().strftime("%Y-%m-%d")
+#INPUT_DIR = 'inputs/'
+#OUTPUT_DIR = 'outputs/'
+INPUT_DIR = f"{today}/"
+OUTPUT_DIR = f"{today}/"
 
-# 画像を配列に格納
+# 변환할 PNG 파일 목록 가져오기
 files = glob.glob(INPUT_DIR + '*.' + IMG_INPUT_FILENAME_EXT)
 
-# 対象画像の変換・保存
+# 각 PNG 파일을 WEBP로 변환하고 저장
 for file in files:
     file_name = os.path.splitext(os.path.basename(file))[0]
     output_file_name = file_name + '.' + IMG_OUTPUT_FILENAME_EXT
@@ -40,68 +43,64 @@ for file in files:
 
     def get_png_info(file):
         try:
-            # 画像を開く
+            # 이미지 열기
             img = Image.open(file)
-
-            # PngImagePluginの情報を取得
+            # PNG 정보 가져오기
             png_info = img.info
-
-            # ファイルを閉じる
+            # 이미지 닫기
             img.close()
-
             return png_info
-
         except Exception as e:
-            print(f"画像を開けませんでした。: {e}")
+            print(f"이미지를 열 수 없습니다: {e}")
             return None
 
-    # PNGファイルからpnginfoを取得
+    # PNG 파일에서 정보 가져오기
     png_info = get_png_info(file)
 
-    # 画像を開く
+    # 이미지 열기
     image = Image.open(file)
 
-    # 日時情報を取得
-    access_time   = os.path.getatime(file) # アクセス日時
-    modify_time   = os.path.getmtime(file) # 更新日時
+    # 파일 시간 정보 가져오기
+    access_time = os.path.getatime(file)  # 접근 시간
+    modify_time = os.path.getmtime(file)  # 수정 시간
 
     if on_windows:
-        creation_time = os.path.getctime(file) # 作成日時
+        creation_time = os.path.getctime(file)  # 생성 시간
 
-    # WEBPに変換
-    image.save(output_file_path, IMG_OUTPUT_FORMAT, quality=WEBP_QUALITY)
+    # WEBP로 변환 (무손실 압축)
+    #image.save(output_file_path, IMG_OUTPUT_FORMAT, lossless=True, quality=WEBP_QUALITY) # lossless=True 추가
+    image.save(output_file_path, IMG_OUTPUT_FORMAT, quality=WEBP_QUALITY) # lossless=True 추가
 
-    # 画像を閉じる
+    # 이미지 닫기
     image.close()
 
-    # WEBPファイルにExifデータ（PNG Info）を保存する
+    # WEBP 파일에 Exif 데이터 (PNG 정보) 저장
     if png_info is not None:
-        # pnginfoの各項目を改行区切りで連結
+        # PNG 정보를 문자열로 변환
         png_info_data = ""
         for key, value in png_info.items():
             if key == 'parameters':
-                # Automatic1111形式の場合
+                # Automatic1111 형식
                 png_info_data += f"{value}\n"
             else:
-                # NovelAI形式の場合
+                # NovelAI 형식
                 png_info_data += f"{key}: {value}\n"
 
         png_info_data = png_info_data.rstrip()
 
-        # Exifデータを作成
+        # Exif 데이터 생성
         exif_dict = {"Exif": {piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(png_info_data or '', encoding='unicode')}}
 
-        # Exifデータをバイトに変換
+        # Exif 데이터를 바이트로 변환
         exif_bytes = piexif.dump(exif_dict)
 
-        # Exifデータを挿入して新しい画像を保存
+        # Exif 데이터를 삽입하여 WEBP 파일 저장
         piexif.insert(exif_bytes, output_file_path)
 
     else:
-        print("PNG情報を取得できませんでした。")
+        print("PNG 정보를 가져올 수 없습니다.")
 
-    # 日付情報の設定
-    # WEBPファイルのハンドルを取得（Windowsのみ）
+    # 파일 시간 정보 설정 (Windows)
     if on_windows:
         handle = win32file.CreateFile(
             output_file_path,
@@ -112,12 +111,18 @@ for file in files:
             0,
             None
         )
-
-        # WEBPファイルに元画像の作成日時、アクセス日時、更新日時を設定
+        # 파일 시간 설정
         win32file.SetFileTime(handle, Time(creation_time), Time(access_time), Time(modify_time))
-
-        # ハンドルを閉じる
+        # 핸들 닫기
         handle.Close()
 
-    # 他のプラットフォームではアクセス日時と更新日時を設定
+    # 파일 시간 정보 설정 (다른 운영체제)
     os.utime(output_file_path, (access_time, modify_time))
+
+    # 원본 PNG 파일 삭제
+    try:
+        os.remove(file)
+        print(f"원본 파일 '{file}' 삭제 완료")
+    except OSError as e:
+        print(f"원본 파일 '{file}' 삭제 실패: {e}")
+
