@@ -137,6 +137,6 @@ if __name__ == "__main__":
     # 디렉토리
     today = datetime.now().strftime("%Y-%m-%d")
     output = args.output
-    output = output + "/" today + "/"
+    output = output + "/" + today + "/"
 
     convert_png_to_webp(output)
